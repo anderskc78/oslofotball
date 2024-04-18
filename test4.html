@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fotballbaner i Oslo</title>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZVgPBXRRRLsy11WnjLACyljS10pHyhco&callback=initMap&libraries=&v=weekly" async defer></script>
+</head>
+<body>
+    <h1>Fotballbaner i Oslo</h1>
+    <div id="map"></div>
+    <script>
+        let map;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: {lat: 59.9139, lng: 10.7522},
+                zoom: 12
+            });
+            loadSportsFacilities();
+        }
+
+        function loadSportsFacilities() {
+            const sheetId = '1ztrIHR6164iDbnLn7bL3GNZ6QVI40FXULKmVre2z3vA';
+            const range = 'Sheet1!A2:I'; // Utvidet til kolonne I
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=AIzaSyDZVgPBXRRRLsy11WnjLACyljS10pHyhco`)
+                .then(response => response.json())
+                .then(data => {
+                    const facilities = data.values;
+                    facilities.forEach((facility) => {
+                        const yearBuilt = facility[0];
+                        const name = facility[1];
+                        const lng = parseFloat(facility[2].replace(',', '.'));
+                        const lat = parseFloat(facility[3].replace(',', '.'));
+                        const status = facility[4];
+                        const description = facility[8]; // Henter data fra kolonne I
+
+                        // Sjekker om ordet "fotball" er i beskrivelsen
+                        if (description.toLowerCase().includes('fotball')) {
+                            let color;
+                            if (status === 'Eksisterende') {
+                                color = '#00FF00'; // Grønn
+                            } else if (status === 'Nedlagt') {
+                                color = '#FF0000'; // Rød
+                            } else if (status === 'Planlagt') {
+                                color = '#FFFF00'; // Gul
+                            }
+
+                            new google.maps.Marker({
+                                position: {lat: lat, lng: lng},
+                                map: map,
+                                title: `${name} - Bygget i ${yearBuilt} - Status: ${status}`,
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 8,
+                                    fillColor: color,
+                                    fillOpacity: 0.8,
+                                    strokeWeight: 0.4
+                                }
+                            });
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading the sheet data:', error));
+        }
+    </script>
+</body>
+</html>
